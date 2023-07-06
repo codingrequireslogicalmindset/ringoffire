@@ -2,11 +2,11 @@ import { Component, OnInit, inject } from '@angular/core';
 import { Game } from 'src/models/game';
 import { MatDialog } from '@angular/material/dialog';
 import { DialogAddPlayerComponent } from '../dialog-add-player/dialog-add-player.component';
-import { Firestore, collection, collectionData } from '@angular/fire/firestore';
+import { Firestore, collection, docData } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
-import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { ActivatedRoute } from '@angular/router';
-import { Unsubscribe } from 'firebase/auth';
+import { EditPlayerComponent } from '../edit-player/edit-player.component';
 
 @Component({
   selector: 'app-game',
@@ -21,36 +21,27 @@ export class GameComponent implements OnInit {
   game: Game;
   gameId: string;
   gameDoc: any;
+  player_images: any;
+  gameOver = false;
 
-  constructor(private route: ActivatedRoute, public dialog: MatDialog) { 
-    const GamesCollection = collection(this.firestore, 'games')
-    this.games$ = collectionData(GamesCollection);
-  }
+  constructor(private route: ActivatedRoute, public dialog: MatDialog) { }
 
   ngOnInit(): void {
     this.newGame();
     this.route.params.subscribe((params) => {
       console.log(params);
       this.gameId = params['id']; // Die ID aus den Route-Parametern erhalten
-      const gameDoc = doc(this.firestore, 'games', this.gameId);
-      
-      let gameSubscription: Unsubscribe;
-      
-      gameSubscription = onSnapshot(gameDoc, (docSnapshot) => {
-        if (docSnapshot.exists()) {
-          const game = docSnapshot.data();
-          console.log('Game update', game);
-          // Spielattribute aktualisieren
-          this.game.currentPlayer = game['currentPlayer'];
-          this.game.playedCards = game['playedCards'];
-          this.game.players = game['players'];
-          this.game.stack = game['stack'];
-          this.game.pickCardAnimation = game['pickCardAnimation'];
-          this.game.currentCard = game['currentCard'];
-        }
-      });
-      // Wenn du das Spiel nicht mehr beobachten möchtest, kannst du das Abonnement beenden:
-      // gameSubscription.unsubscribe();
+      const gamesCollectionRef = collection(this.firestore, 'games')
+      const docRef = doc(gamesCollectionRef, this.gameId);
+      docData(docRef).subscribe(game => {
+        this.game.currentPlayer = game['currentPlayer'];
+        this.game.playedCards = game['playedCards'];
+        this.game.players = game['players'];
+        this.game.player_images = game['player_images'];
+        this.game.stack = game['stack'];
+        this.game.pickCardAnimation = game['pickCardAnimation'];
+        this.game.currentCard = game['currentCard'];
+      })
     });
   }
   
@@ -58,8 +49,18 @@ export class GameComponent implements OnInit {
     this.game = new Game();
   }
 
+  takeCardValid() {
+    if (this.game.players.length < 2) {
+      alert('Select at least two players, before you start the game!');
+    } else {
+      this.takeCard();
+    }
+  }  
+
   takeCard() {
-    if (!this.game.pickCardAnimation) {
+    if (this.game.stack.length == 0) {
+      this.gameOver = true;
+    } else if (!this.game.pickCardAnimation && this.game.players.length >= 2) {
       this.game.currentCard = this.game.stack.pop();
       this.game.pickCardAnimation = true;
       console.log('New card: ' + this.game.currentCard);
@@ -75,12 +76,29 @@ export class GameComponent implements OnInit {
     }
   }
 
+  editPlayer(playerId: number) {
+    console.log('Edit player', playerId);
+    const dialogRef = this.dialog.open(EditPlayerComponent);
+    dialogRef.afterClosed().subscribe((change: string) => {
+      console.log('Received Change', change);
+      if (change) {
+        if (change == 'DELETE') {
+          this.game.players.splice(playerId, 1);
+          this.game.player_images.splice(playerId, 1);
+        } else {
+          this.game.player_images[playerId] = change;
+        }
+        this.saveGame();
+      }
+    });
+  }
+
   openDialog(): void {
     const dialogRef = this.dialog.open(DialogAddPlayerComponent);
-
     dialogRef.afterClosed().subscribe((name: string) => {
       if(name && name.length > 0) {
         this.game.players.push(name);
+        this.game.player_images.push('profile-squirrel.png');
         this.saveGame();
       }
     });

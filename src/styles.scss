@@ -1,5 +1,24 @@
-body {
+body, html { 
     margin: 0;
-} 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+    height: 100%;
+    overflow: hidden; 
+    font-family: Roboto, "Helvetica Neue", sans-serif; 
+}
+
+@media (max-width: 1000px) {
+    .hide-mobile {
+        display: none;
+    }
+}
+
+@media (min-width: 1000px) {
+    .hide-desktop {
+        display: none !important;
+    }
+}
+
+@media (max-width: 432px) {
+    .played-card {
+        margin-right: 32px;
+    }
+}
