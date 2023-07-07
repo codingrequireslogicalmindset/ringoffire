@@ -67,12 +67,6 @@
         height: 40px;
         width: 40px;
     }
-    @media (max-width: 415px) {
-        right: 8px;
-        bottom: 95px;
-        height: 40px;
-        width: 40px;
-    }
 }
 
 .pin-bottom {
@@ -117,8 +111,8 @@ app-player, app-player-mobile {
     height: 100%;
 
     img {
-        width: 800px;
-        height: 800px;
+        max-width: 100%;
+        height: 70%;
         border-bottom-left-radius: 50px;
         border-bottom-right-radius: 50px;
         border-top-left-radius: 50px;
